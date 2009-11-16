@@ -9,6 +9,14 @@ from jinja2 import Environment, FileSystemLoader
 # extract data from {% lanyon %} tags
 # run site preprocessors
 # for each content file
+    # if type == 'markdown'
+        # fetch template name and other data from YAML front matter a la jekyll
+        # generate markdown output and store in 'content' context data
+        # copy all other front matter values to context data
+        # render template to output file using context data
+    # if type == 'html'
+        # copy all front matter values to context data
+        # let jinja2 {% extends %} handle the template selection
     # render template to output file
     # run registered content processors on output file
 # run site postprocessors
@@ -19,7 +27,7 @@ class SiteNode( object ):
     
     def __init__( self, path ):
         self.path = path
-        self.name = os.path.split( path )[ 1 ]
+        self.name = os.path.basename( path )
         pass
 
     def visit( self, visitor ):
@@ -38,6 +46,7 @@ class DirectoryNode( SiteNode ):
     def visit( self, visitor ):
         for name, child in self.children.items():
             child.visit( visitor )
+        
 
 class RootNode( DirectoryNode ):
 
@@ -56,16 +65,61 @@ class ContentNode( SiteNode ):
 def build_content_tree( content_path ):
     root = RootNode( content_path )
     
-    for path, dirs, files in os.walk( content_path ):
+    # TODO: Possibly move this lookup-node-by-path functionality into the DirectoryNode class
+    directory_nodes = { content_path: root }
+    
+    for path, directories, files in os.walk( content_path ):
+
+        # Get node for parent path
+        parent_node = directory_nodes[ path ]
+        
+        # Add all directories as DirectoryNode instances
+        for directory in directories:
+            full_path = os.path.join( path, directory )
+            directory_nodes[ full_path ] = parent_node.addChild( DirectoryNode( full_path ) )            
+        
+        # Add all files as ContentNode instances
         for filename in files:
-            file_path = os.path.join( path, filename )
-            print file_path
-            if os.path.isdir( file_path ):
-                root.addChild( DirectoryNode( file_path ) )
-            else:
-                root.addChild( ContentNode( file_path ) )
+            full_path = os.path.join( path, filename )
+            parent_node.addChild( ContentNode( full_path ) )
     
     return root        
+
+class OutputGeneratorVisitor(object):
+    # TODO: Find an elegant way of not having to pass all these parameters in
+    def __init__( self, content_dir, output_dir, env ):
+        self.content_dir = content_dir
+        self.output_dir = output_dir
+        self.env = env
+        
+    def visit( self, node ):
+        # Read in the contents of the content file and use that to generate a jinja2 template
+        # We do this to prevent having to add the content directory as a potential source of
+        # templates for our jinja2 environment's FileSystemLoader. If we did this, users would be 
+        # able to extend other 'templates' in the content directory, which would break the
+        # separation of presentation from content. Doing it this way doesn't enforce the separation,
+        # it just makes is harder to work around.
+        content_file = codecs.open( node.path, 'r', 'utf-8' )
+        content = content_file.read()
+        content_file.close()
+        template = self.env.from_string( content )
+
+        # Truncate path to just the relative path from within the content directory, the append to
+        # the output path to get the full path to the output file
+        relative_path = os.path.relpath( node.path, self.content_dir )
+        output_path = os.path.join( self.output_dir, relative_path )
+
+        print "# Processing " + relative_path
+
+        # Create output directory if it doesn't exist
+        parent_path = os.path.dirname( output_path )
+        if not os.path.exists( parent_path ):
+            os.makedirs( parent_path );
+        
+        # Render template and write to the same name file in the output directory
+        with codecs.open( output_path, 'w', 'utf-8' ) as f:
+            f.write( template.render() )
+            f.close()
 
 def main(argv):
     layout_dir = os.path.join( os.getcwdu(), 'layout' )
@@ -78,48 +132,14 @@ def main(argv):
     if not os.path.exists( output_dir ):
         os.makedirs( output_dir )
     
-    # Set up jinja2 environment to load templates from content and layout directories
+    # Set up jinja2 environment to load templates from layout directory
     env = Environment(
-        loader = FileSystemLoader( [ content_dir, layout_dir ] ),
+        loader = FileSystemLoader( [content_dir, layout_dir] ),
     )
     
-    content_tree.visit( GeneratorNodeVisitor( content_dir, output_dir, env ) );
+    # Generate output from content tree
+    content_tree.visit( OutputGeneratorVisitor( content_dir, output_dir, env ) );
     
-    # # Loop through all files in the content dir
-    # for filename in os.listdir( content_dir ):
-    #     # Use jinja2 environment to create Template instance for file
-    #     template = env.get_template( filename )
-    #     
-    #     # Render template and write to the same name file in the output directory
-    #     with codecs.open( os.path.join( output_dir, filename ), 'w', 'utf-8' ) as f:
-    #         f.write( template.render() )
-    #         f.close()
-
-class GeneratorNodeVisitor(object):
-    def __init__( self, content_dir, output_dir, env ):
-        self.content_dir = content_dir
-        self.output_dir = output_dir
-        self.env = env
-        pass
-        
-    def visit( self, node ):
-        filename = node.path[len(self.content_dir)+1:];
-        
-        output_path = os.path.join( self.output_dir, filename )
-                
-        # Use jinja2 environment to create Template instance for file
-        template = self.env.get_template( filename )
-
-        # Create output path if it doesn't exist
-        parent_path = os.path.split( output_path )[ 0 ]        
-        if not os.path.exists( parent_path ):
-            os.makedirs( parent_path );
-        
-        # Render template and write to the same name file in the output directory
-        with codecs.open( output_path, 'w', 'utf-8' ) as f:
-            f.write( template.render() )
-            f.close()
-        pass
         
 if __name__ == "__main__":
     main(sys.argv[1:])
