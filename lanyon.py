@@ -31,19 +31,23 @@ class SiteNode( object ):
         pass
 
     def visit( self, visitor ):
-        pass
+        method = 'visit' + self.__class__.__name__;
+        if not hasattr( visitor, method ) or not callable( getattr( visitor, method ) ):
+            method = 'visit'
+        getattr( visitor, method )( self )
 
 class DirectoryNode( SiteNode ):
-    children = {}
 
     def __init__( self, path ):
-        SiteNode.__init__( self, path )
+        super( DirectoryNode, self ).__init__( path )
+        self.children = {}
         
     def addChild( self, child ):
-        self.children[ self.name ] = child
+        self.children[ child.name ] = child
         return child
 
     def visit( self, visitor ):
+        super( DirectoryNode, self ).visit( visitor )
         for name, child in self.children.items():
             child.visit( visitor )
         
@@ -51,16 +55,14 @@ class DirectoryNode( SiteNode ):
 class RootNode( DirectoryNode ):
 
     def __init__( self, path ):
-        DirectoryNode.__init__( self, path )
+        super( RootNode, self ).__init__( path )
     
 class ContentNode( SiteNode ):
     data = {}
     
     def __init__( self, path ):
-        SiteNode.__init__( self, path )
-
-    def visit( self, visitor ):
-        visitor.visit( self )
+        super( ContentNode, self ).__init__( path )
+        self.extension = os.path.splitext( path )[ 1 ]
 
 def build_content_tree( content_path ):
     root = RootNode( content_path )
@@ -72,17 +74,18 @@ def build_content_tree( content_path ):
 
         # Get node for parent path
         parent_node = directory_nodes[ path ]
-        
+
         # Add all directories as DirectoryNode instances
         for directory in directories:
             full_path = os.path.join( path, directory )
-            directory_nodes[ full_path ] = parent_node.addChild( DirectoryNode( full_path ) )            
+            directory_node = parent_node.addChild( DirectoryNode( full_path ) )
+            directory_nodes[ full_path ] = directory_node
         
         # Add all files as ContentNode instances
         for filename in files:
             full_path = os.path.join( path, filename )
             parent_node.addChild( ContentNode( full_path ) )
-    
+        
     return root        
 
 class OutputGeneratorVisitor(object):
@@ -91,8 +94,25 @@ class OutputGeneratorVisitor(object):
         self.content_dir = content_dir
         self.output_dir = output_dir
         self.env = env
-        
+    
     def visit( self, node ):
+        pass
+    
+    def visitDirectoryNode( self, node ):
+        relative_path = os.path.relpath( node.path, self.content_dir )
+        output_path = os.path.join( self.output_dir, relative_path )
+
+        if not os.path.exists( output_path ):
+            print "#   Creating: " + relative_path
+            os.makedirs( output_path );
+        
+        pass
+    
+    def visitContentNode( self, node ):
+        # todo: find processors based on node.path and node.extension
+        # todo: move template generation logic to 'TemplateContentProcessor' class
+        # todo: add 'PassthroughContentProcessor' class to handle js, css and media types
+        
         # Read in the contents of the content file and use that to generate a jinja2 template
         # We do this to prevent having to add the content directory as a potential source of
         # templates for our jinja2 environment's FileSystemLoader. If we did this, users would be 
@@ -109,13 +129,8 @@ class OutputGeneratorVisitor(object):
         relative_path = os.path.relpath( node.path, self.content_dir )
         output_path = os.path.join( self.output_dir, relative_path )
 
-        print "# Processing " + relative_path
+        print "# Processing: " + relative_path
 
-        # Create output directory if it doesn't exist
-        parent_path = os.path.dirname( output_path )
-        if not os.path.exists( parent_path ):
-            os.makedirs( parent_path );
-        
         # Render template and write to the same name file in the output directory
         with codecs.open( output_path, 'w', 'utf-8' ) as f:
             f.write( template.render() )
