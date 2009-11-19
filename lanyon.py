@@ -21,9 +21,57 @@ from jinja2 import Environment, FileSystemLoader
     # run registered content processors on output file
 # run site postprocessors
 
+class Site( object ):
+    config = None
+    content_root = None
+    
+    def __init__( self, config ):
+        self.config = config
+    
+    def build_content_tree( self, content_path ):
+        root = RootNode( content_path )
+    
+        # TODO: Possibly move this lookup-node-by-path functionality into the DirectoryNode class
+        directory_nodes = { content_path: root }
+    
+        for path, directories, files in os.walk( content_path ):
+
+            # Get node for parent path
+            parent_node = directory_nodes[ path ]
+
+            # Add all directories as DirectoryNode instances
+            for directory in directories:
+                full_path = os.path.join( path, directory )
+                directory_node = parent_node.addChild( DirectoryNode( full_path ) )
+                directory_nodes[ full_path ] = directory_node
+        
+            # Add all files as ContentNode instances
+            for filename in files:
+                full_path = os.path.join( path, filename )
+                parent_node.addChild( ContentNode( full_path ) )
+        
+        return root             
+    
+    def generate( self ):
+        if self.content_root == None:
+            self.content_root = self.build_content_tree( self.config['content_path'] )
+    
+        # Attempt to create output directory if it doesn't exist
+        if not os.path.exists( self.config['output_path'] ):
+            os.makedirs( self.config['output_path'] )
+    
+        # Set up jinja2 environment to load templates from layout directory
+        self.config['env'] = Environment(
+            loader = FileSystemLoader( [ self.config['layout_path'] ] ),
+        )
+    
+        # Generate output from content tree
+        self.content_root.visit( OutputGeneratorVisitor( self.config ) );
+        
+
 class SiteNode( object ):
-    name = ""
-    path = ""
+    name = None
+    path = None
     
     def __init__( self, path ):
         self.path = path
@@ -58,49 +106,25 @@ class RootNode( DirectoryNode ):
         super( RootNode, self ).__init__( path )
     
 class ContentNode( SiteNode ):
-    data = {}
+    data = None
     
     def __init__( self, path ):
         super( ContentNode, self ).__init__( path )
         self.extension = os.path.splitext( path )[ 1 ]
-
-def build_content_tree( content_path ):
-    root = RootNode( content_path )
-    
-    # TODO: Possibly move this lookup-node-by-path functionality into the DirectoryNode class
-    directory_nodes = { content_path: root }
-    
-    for path, directories, files in os.walk( content_path ):
-
-        # Get node for parent path
-        parent_node = directory_nodes[ path ]
-
-        # Add all directories as DirectoryNode instances
-        for directory in directories:
-            full_path = os.path.join( path, directory )
-            directory_node = parent_node.addChild( DirectoryNode( full_path ) )
-            directory_nodes[ full_path ] = directory_node
-        
-        # Add all files as ContentNode instances
-        for filename in files:
-            full_path = os.path.join( path, filename )
-            parent_node.addChild( ContentNode( full_path ) )
-        
-    return root        
+        self.data = {}
 
 class OutputGeneratorVisitor(object):
-    # TODO: Find an elegant way of not having to pass all these parameters in
-    def __init__( self, content_dir, output_dir, env ):
-        self.content_dir = content_dir
-        self.output_dir = output_dir
-        self.env = env
+    config = None
+    
+    def __init__( self, config ):
+        self.config = config;
     
     def visit( self, node ):
         pass
     
     def visitDirectoryNode( self, node ):
-        relative_path = os.path.relpath( node.path, self.content_dir )
-        output_path = os.path.join( self.output_dir, relative_path )
+        relative_path = os.path.relpath( node.path, self.config['content_path'] )
+        output_path = os.path.join( self.config['output_path'], relative_path )
 
         if not os.path.exists( output_path ):
             print "#   Creating: " + relative_path
@@ -122,12 +146,12 @@ class OutputGeneratorVisitor(object):
         content_file = codecs.open( node.path, 'r', 'utf-8' )
         content = content_file.read()
         content_file.close()
-        template = self.env.from_string( content )
+        template = self.config['env'].from_string( content )
 
         # Truncate path to just the relative path from within the content directory, the append to
         # the output path to get the full path to the output file
-        relative_path = os.path.relpath( node.path, self.content_dir )
-        output_path = os.path.join( self.output_dir, relative_path )
+        relative_path = os.path.relpath( node.path, self.config['content_path'] )
+        output_path = os.path.join( self.config['output_path'], relative_path )
 
         print "# Processing: " + relative_path
 
@@ -137,24 +161,14 @@ class OutputGeneratorVisitor(object):
             f.close()
 
 def main(argv):
-    layout_dir = os.path.join( os.getcwdu(), 'layout' )
-    content_dir = os.path.join( os.getcwdu(), 'content' )
-    output_dir = os.path.join( os.getcwdu(), 'output' )
+    config = {
+        'layout_path': os.path.join( os.getcwdu(), 'layout' ),
+        'content_path': os.path.join( os.getcwdu(), 'content' ),
+        'output_path': os.path.join( os.getcwdu(), 'output' )
+    }
     
-    content_tree = build_content_tree( content_dir )
-    
-    # Attempt to create output directory if it doesn't exist
-    if not os.path.exists( output_dir ):
-        os.makedirs( output_dir )
-    
-    # Set up jinja2 environment to load templates from layout directory
-    env = Environment(
-        loader = FileSystemLoader( [content_dir, layout_dir] ),
-    )
-    
-    # Generate output from content tree
-    content_tree.visit( OutputGeneratorVisitor( content_dir, output_dir, env ) );
-    
+    site = Site( config = config )    
+    site.generate()
         
 if __name__ == "__main__":
     main(sys.argv[1:])
