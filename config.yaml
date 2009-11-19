@@ -1,0 +1,34 @@
+paths:
+    content:    'content/'
+    layout:     'layout/'
+    output:     'output/'
+
+site_preprocessors:
+    - class: 'lanyon.processors.blog.TagCollector'
+      property: 'tags'
+      path: 'posts/'
+
+content_processors:
+    - path: '*'
+      processors:
+          - filetypes: [ 'html' ]
+            classes: [
+                'lanyon.processors.template.Jinja2Processor'
+            ]
+          - filetypes: [ 'markdown', 'mdown', 'md' ]
+            classes: [
+                'lanyon.processors.markup.MarkdownProcessor'
+            ]
+          - filetypes: [ 'css', 'js' ]
+            classes: [
+                'lanyon.processors.template.Jinja2Processor',
+                'lanyon.processors.compression.YUICompressorProcessor'
+            ]
+
+site_postprocessors:
+    - class: 'lanyon.processors.blog.TagPageGenerator'
+      tag_template: '_tag.html'
+      output_path: 'tags/{tag}.html'
+
+context:
+    foo: bar
