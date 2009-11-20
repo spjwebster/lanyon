@@ -11,18 +11,19 @@ site_preprocessors:
 content_processors:
     - path: '*'
       processors:
-          - filetypes: [ 'html' ]
+          - extensions: [ 'html' ]
             classes: [
-                'lanyon.processors.template.Jinja2Processor'
+                'lanyon.processors.template.YAMLDataExtractor',
+                'lanyon.processors.template.Jinja2Renderer'
             ]
-          - filetypes: [ 'markdown', 'mdown', 'md' ]
+          - extensions: [ 'markdown', 'mdown', 'md' ]
             classes: [
-                'lanyon.processors.markup.MarkdownProcessor'
+                'lanyon.processors.markup.MarkdownRenderer'
             ]
-          - filetypes: [ 'css', 'js' ]
+          - extensions: [ 'css', 'js' ]
             classes: [
-                'lanyon.processors.template.Jinja2Processor',
-                'lanyon.processors.compression.YUICompressorProcessor'
+                'lanyon.processors.template.Jinja2Renderer',
+                'lanyon.processors.compression.YUICompressor'
             ]
 
 site_postprocessors:
