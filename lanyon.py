@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, codecs
+import codecs, os, sys, yaml
 
 from optparse import OptionParser
 from jinja2 import Environment, FileSystemLoader
@@ -60,11 +60,6 @@ class Site( object ):
         if not os.path.exists( self.config['output_path'] ):
             os.makedirs( self.config['output_path'] )
     
-        # Set up jinja2 environment to load templates from layout directory
-        self.config['env'] = Environment(
-            loader = FileSystemLoader( [ self.config['layout_path'] ] ),
-        )
-    
         # Generate output from content tree
         self.content_root.visit( OutputGeneratorVisitor( self.config ) );
         
@@ -83,6 +78,7 @@ class SiteNode( object ):
         if not hasattr( visitor, method ) or not callable( getattr( visitor, method ) ):
             method = 'visit'
         getattr( visitor, method )( self )
+
 
 class DirectoryNode( SiteNode ):
 
@@ -105,6 +101,7 @@ class RootNode( DirectoryNode ):
     def __init__( self, path ):
         super( RootNode, self ).__init__( path )
     
+
 class ContentNode( SiteNode ):
     data = None
     
@@ -113,11 +110,14 @@ class ContentNode( SiteNode ):
         self.extension = os.path.splitext( path )[ 1 ]
         self.data = {}
 
+
 class OutputGeneratorVisitor(object):
-    config = None
     
     def __init__( self, config ):
         self.config = config;
+        self.content_processors = [
+            Jinja2Renderer( config )
+        ]
     
     def visit( self, node ):
         pass
@@ -129,24 +129,9 @@ class OutputGeneratorVisitor(object):
         if not os.path.exists( output_path ):
             print "#   Creating: " + relative_path
             os.makedirs( output_path );
-        
-        pass
     
     def visitContentNode( self, node ):
         # todo: find processors based on node.path and node.extension
-        # todo: move template generation logic to 'TemplateContentProcessor' class
-        # todo: add 'PassthroughContentProcessor' class to handle js, css and media types
-        
-        # Read in the contents of the content file and use that to generate a jinja2 template
-        # We do this to prevent having to add the content directory as a potential source of
-        # templates for our jinja2 environment's FileSystemLoader. If we did this, users would be 
-        # able to extend other 'templates' in the content directory, which would break the
-        # separation of presentation from content. Doing it this way doesn't enforce the separation,
-        # it just makes is harder to work around.
-        content_file = codecs.open( node.path, 'r', 'utf-8' )
-        content = content_file.read()
-        content_file.close()
-        template = self.config['env'].from_string( content )
 
         # Truncate path to just the relative path from within the content directory, the append to
         # the output path to get the full path to the output file
@@ -155,10 +140,47 @@ class OutputGeneratorVisitor(object):
 
         print "# Processing: " + relative_path
 
-        # Render template and write to the same name file in the output directory
+        # Read content from content file
+        content_file = codecs.open( node.path, 'r', 'utf-8' )
+        content = content_file.read()
+        content_file.close()
+        
+        # Apply processors to content
+        for processor in self.content_processors:
+            content = processor.process( node, content )
+
+        # Write processed content to same named file in the output directory
         with codecs.open( output_path, 'w', 'utf-8' ) as f:
-            f.write( template.render() )
+            f.write( content )
             f.close()
+
+
+class ContentProcessor(object):
+    def __init__( self, config ):
+        self.config = config
+    
+    def process( self, node, content ):
+        pass
+
+
+class Jinja2Renderer( ContentProcessor ):
+    def __init__( self, config ):
+        super( Jinja2Renderer, self ).__init__( config )
+        
+        # Set up jinja2 environment to load templates from layout directory
+        self.env = Environment(
+            loader = FileSystemLoader( [ self.config['layout_path'] ] ),
+        )
+        
+    def process( self, node, content ):
+        template = self.env.from_string( content )
+        return template.render( node.data )
+
+
+class IdentityRenderer( ContentProcessor ):
+    def process( self, node, content ):
+        return content
+
 
 def main(argv):
     config = {
