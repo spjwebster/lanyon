@@ -99,11 +99,14 @@ class OutputGeneratorVisitor(object):
     
     def __init__( self, config ):
         self.config = config;
+
+        # TODO: Allow processors to be registered only for specific content branches. This should be
+        # in addition to node file extension, with the option to specify one or the other or both.
         self.content_processors = {
-            'html': [
+            ('html'): [
                 processors.Jinja2Renderer( config )
             ],
-            'css': [
+            ('css','js'): [
                 processors.IdentityRenderer( config )
             ]            
         }
@@ -125,9 +128,18 @@ class OutputGeneratorVisitor(object):
         relative_path = os.path.relpath( node.path, self.config['content_path'] )
         output_path = os.path.join( self.config['output_path'], relative_path )
 
+        # Find all processors that are registered for the node file extension. The first set of 
+        # processors match wins, which is necessary as content processor order needs to be 
+        # preserved.
+        node_processors = None
+        for extensions, processors in self.content_processors.items():
+            if node.extension in extensions:
+                node_processors = processors
+                break
+        
         # If processors have been registered for the node extension, run them against the node 
         # content and write that to the output file.
-        if self.content_processors.has_key( node.extension ):
+        if node_processors:
             print "# Processing: " + relative_path
             try:
                 # Read content from content file
@@ -136,7 +148,7 @@ class OutputGeneratorVisitor(object):
                 content_file.close()
 
                 # Apply registered processors to content
-                for processor in self.content_processors[ node.extension ]:
+                for processor in node_processors:
                     content = processor.process( node, content )
 
                 try:
