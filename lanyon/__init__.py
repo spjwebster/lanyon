@@ -1,22 +1,5 @@
-import codecs, os, sys
+import codecs, os, sys, shutil
 import processors
-
-
-# parse content into tree of nodes
-# extract data from {% lanyon %} tags
-# run site preprocessors
-# for each content file
-    # if type == 'markdown'
-        # fetch template name and other data from YAML front matter a la jekyll
-        # generate markdown output and store in 'content' context data
-        # copy all other front matter values to context data
-        # render template to output file using context data
-    # if type == 'html'
-        # copy all front matter values to context data
-        # let jinja2 {% extends %} handle the template selection
-    # render template to output file
-    # run registered content processors on output file
-# run site postprocessors
 
 class Site( object ):
     config = None
@@ -56,9 +39,13 @@ class Site( object ):
         # Attempt to create output directory if it doesn't exist
         if not os.path.exists( self.config['output_path'] ):
             os.makedirs( self.config['output_path'] )
-    
+        
+        # toto: run site preprocessors
+        
         # Generate output from content tree
         self.content_root.visit( OutputGeneratorVisitor( self.config ) );
+
+        # toto: run site postprocessors
         
 
 class SiteNode( object ):
@@ -104,7 +91,7 @@ class ContentNode( SiteNode ):
     
     def __init__( self, path ):
         super( ContentNode, self ).__init__( path )
-        self.extension = os.path.splitext( path )[ 1 ]
+        self.extension = os.path.splitext( path )[ 1 ][1:]
         self.data = {}
 
 
@@ -112,9 +99,14 @@ class OutputGeneratorVisitor(object):
     
     def __init__( self, config ):
         self.config = config;
-        self.content_processors = [
-            processors.Jinja2Renderer( config )
-        ]
+        self.content_processors = {
+            'html': [
+                processors.Jinja2Renderer( config )
+            ],
+            'css': [
+                processors.IdentityRenderer( config )
+            ]            
+        }
     
     def visit( self, node ):
         pass
@@ -128,25 +120,39 @@ class OutputGeneratorVisitor(object):
             os.makedirs( output_path );
     
     def visitContentNode( self, node ):
-        # todo: find processors based on node.path and node.extension
-
         # Truncate path to just the relative path from within the content directory, the append to
         # the output path to get the full path to the output file
         relative_path = os.path.relpath( node.path, self.config['content_path'] )
         output_path = os.path.join( self.config['output_path'], relative_path )
 
-        print "# Processing: " + relative_path
+        # If processors have been registered for the node extension, run them against the node 
+        # content and write that to the output file.
+        if self.content_processors.has_key( node.extension ):
+            print "# Processing: " + relative_path
+            try:
+                # Read content from content file
+                content_file = codecs.open( node.path, 'r', 'utf-8' )
+                content = content_file.read()
+                content_file.close()
 
-        # Read content from content file
-        content_file = codecs.open( node.path, 'r', 'utf-8' )
-        content = content_file.read()
-        content_file.close()
-        
-        # Apply processors to content
-        for processor in self.content_processors:
-            content = processor.process( node, content )
+                # Apply registered processors to content
+                for processor in self.content_processors[ node.extension ]:
+                    content = processor.process( node, content )
 
-        # Write processed content to same named file in the output directory
-        with codecs.open( output_path, 'w', 'utf-8' ) as f:
-            f.write( content )
-            f.close()
+                try:
+                    # Write processed content to same named file in the output directory
+                    with codecs.open( output_path, 'w', 'utf-8' ) as f:
+                        f.write( content )
+                        f.close()
+                except IOError:
+                    print >> sys.stderr, "## Error: Couldn't open " + output_path + " for writing"
+            except IOError:
+                print >> sys.stderr, "## Error: Couldn't read " + node.path + " for processing"
+
+        # If no processors registered, just copy the file to the output folder
+        else:
+            print "#    Copying: " + relative_path
+            try:
+                shutil.copy2( node.path, output_path )
+            except shutil.Error:
+                print >> sys.stderr, "## Error: Couldn't copy " + node.path + " to " + output_path

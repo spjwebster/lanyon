@@ -1,5 +1,8 @@
 from jinja2 import Environment, FileSystemLoader
 
+# TODO: create YAML data extractor to extract data from YAML front matter and store in node data
+# TODO: create MarkdownRenderer that uses template from node data
+
 class ContentProcessor(object):
     def __init__( self, config ):
         self.config = config
