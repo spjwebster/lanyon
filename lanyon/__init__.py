@@ -104,6 +104,7 @@ class OutputGeneratorVisitor(object):
         # in addition to node file extension, with the option to specify one or the other or both.
         self.content_processors = {
             ('html'): [
+                processors.YAMLFrontMatterExtractor( config ),
                 processors.Jinja2Renderer( config )
             ],
             ('css','js'): [
