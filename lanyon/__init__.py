@@ -22,13 +22,15 @@ class Site( object ):
             # Add all directories as DirectoryNode instances
             for directory in directories:
                 full_path = os.path.join( path, directory )
-                directory_node = parent_node.addChild( DirectoryNode( full_path ) )
+                relative_path = os.path.relpath( full_path, content_path )
+                directory_node = parent_node.addChild( DirectoryNode( relative_path ) )
                 directory_nodes[ full_path ] = directory_node
         
             # Add all files as ContentNode instances
             for filename in files:
                 full_path = os.path.join( path, filename )
-                parent_node.addChild( ContentNode( full_path ) )
+                relative_path = os.path.relpath( full_path, content_path )
+                parent_node.addChild( ContentNode( relative_path ) )
         
         return root             
     
@@ -61,7 +63,7 @@ class SiteNode( object ):
         method = 'visit' + self.__class__.__name__;
         if not hasattr( visitor, method ) or not callable( getattr( visitor, method ) ):
             method = 'visit'
-        getattr( visitor, method )( self )
+        getattr( visitor, method )( self )        
 
 
 class DirectoryNode( SiteNode ):
@@ -72,8 +74,9 @@ class DirectoryNode( SiteNode ):
         
     def addChild( self, child ):
         self.children[ child.name ] = child
+        child.parent = self
         return child
-
+    
     def visit( self, visitor ):
         super( DirectoryNode, self ).visit( visitor )
         for name, child in self.children.items():
@@ -87,8 +90,6 @@ class RootNode( DirectoryNode ):
     
 
 class ContentNode( SiteNode ):
-    data = None
-    
     def __init__( self, path ):
         super( ContentNode, self ).__init__( path )
         self.extension = os.path.splitext( path )[ 1 ][1:]
@@ -116,18 +117,18 @@ class OutputGeneratorVisitor(object):
         pass
     
     def visitDirectoryNode( self, node ):
-        relative_path = os.path.relpath( node.path, self.config['content_path'] )
-        output_path = os.path.join( self.config['output_path'], relative_path )
+        # Get full path to content and output files
+        content_path = os.path.join( self.config['content_path'], node.path )
+        output_path = os.path.join( self.config['output_path'], node.path )
 
         if not os.path.exists( output_path ):
-            print "#   Creating: " + relative_path
+            print "#   Creating: " + node.path
             os.makedirs( output_path );
     
     def visitContentNode( self, node ):
-        # Truncate path to just the relative path from within the content directory, the append to
-        # the output path to get the full path to the output file
-        relative_path = os.path.relpath( node.path, self.config['content_path'] )
-        output_path = os.path.join( self.config['output_path'], relative_path )
+        # Get full path to content and output files
+        content_path = os.path.join( self.config['content_path'], node.path )
+        output_path = os.path.join( self.config['output_path'], node.path )
 
         # Find all processors that are registered for the node file extension. The first set of 
         # processors match wins, which is necessary as content processor order needs to be 
@@ -141,10 +142,10 @@ class OutputGeneratorVisitor(object):
         # If processors have been registered for the node extension, run them against the node 
         # content and write that to the output file.
         if node_processors:
-            print "# Processing: " + relative_path
+            print "# Processing: " + node.path
             try:
                 # Read content from content file
-                content_file = codecs.open( node.path, 'r', 'utf-8' )
+                content_file = codecs.open( content_path, 'r', 'utf-8' )
                 content = content_file.read()
                 content_file.close()
 
@@ -160,12 +161,12 @@ class OutputGeneratorVisitor(object):
                 except IOError:
                     print >> sys.stderr, "## Error: Couldn't open " + output_path + " for writing"
             except IOError:
-                print >> sys.stderr, "## Error: Couldn't read " + node.path + " for processing"
+                print >> sys.stderr, "## Error: Couldn't read " + content_path + " for processing"
 
         # If no processors registered, just copy the file to the output folder
         else:
-            print "#    Copying: " + relative_path
+            print "#    Copying: " + node.path
             try:
-                shutil.copy2( node.path, output_path )
+                shutil.copy2( content_path, output_path )
             except shutil.Error:
-                print >> sys.stderr, "## Error: Couldn't copy " + node.path + " to " + output_path
+                print >> sys.stderr, "## Error: Couldn't copy " + content_path + " to " + output_path
