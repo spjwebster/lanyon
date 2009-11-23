@@ -1,4 +1,4 @@
-import os
+import os, fnmatch
 
 class SiteNode( object ):
     def __init__( self, path ):
@@ -22,7 +22,20 @@ class DirectoryNode( SiteNode ):
         self.children[ child.name ] = child
         child.parent = self
         return child
-    
+
+    def find( self, path_pattern, deep = True ):
+        matches = []
+        
+        for name, child in self.children.items():
+            print path_pattern + " vs. " + child.path
+            if fnmatch.fnmatch( child.path, path_pattern ):
+                matches.append( child )
+            
+            if deep and child.__class__ == DirectoryNode:
+                matches.extend( child.find( path_pattern, deep ) or [] )
+        
+        return matches
+        
     def visit( self, visitor ):
         super( DirectoryNode, self ).visit( visitor )
         for name, child in self.children.items():
