@@ -1,5 +1,5 @@
 import codecs, os, sys, shutil
-import processors
+import structure, processors
 
 class Site( object ):
     config = None
@@ -9,7 +9,7 @@ class Site( object ):
         self.config = config
     
     def build_content_tree( self, content_path ):
-        root = RootNode( content_path )
+        root = structure.RootNode( content_path )
     
         # TODO: Possibly move this lookup-node-by-path functionality into the DirectoryNode class
         directory_nodes = { content_path: root }
@@ -23,14 +23,14 @@ class Site( object ):
             for directory in directories:
                 full_path = os.path.join( path, directory )
                 relative_path = os.path.relpath( full_path, content_path )
-                directory_node = parent_node.addChild( DirectoryNode( relative_path ) )
+                directory_node = parent_node.addChild( structure.DirectoryNode( relative_path ) )
                 directory_nodes[ full_path ] = directory_node
         
             # Add all files as ContentNode instances
             for filename in files:
                 full_path = os.path.join( path, filename )
                 relative_path = os.path.relpath( full_path, content_path )
-                parent_node.addChild( ContentNode( relative_path ) )
+                parent_node.addChild( structure.ContentNode( relative_path ) )
         
         return root             
     
@@ -48,52 +48,6 @@ class Site( object ):
         self.content_root.visit( OutputGeneratorVisitor( self.config ) );
 
         # toto: run site postprocessors
-        
-
-class SiteNode( object ):
-    name = None
-    path = None
-    
-    def __init__( self, path ):
-        self.path = path
-        self.name = os.path.basename( path )
-        pass
-
-    def visit( self, visitor ):
-        method = 'visit' + self.__class__.__name__;
-        if not hasattr( visitor, method ) or not callable( getattr( visitor, method ) ):
-            method = 'visit'
-        getattr( visitor, method )( self )        
-
-
-class DirectoryNode( SiteNode ):
-
-    def __init__( self, path ):
-        super( DirectoryNode, self ).__init__( path )
-        self.children = {}
-        
-    def addChild( self, child ):
-        self.children[ child.name ] = child
-        child.parent = self
-        return child
-    
-    def visit( self, visitor ):
-        super( DirectoryNode, self ).visit( visitor )
-        for name, child in self.children.items():
-            child.visit( visitor )
-        
-
-class RootNode( DirectoryNode ):
-
-    def __init__( self, path ):
-        super( RootNode, self ).__init__( path )
-    
-
-class ContentNode( SiteNode ):
-    def __init__( self, path ):
-        super( ContentNode, self ).__init__( path )
-        self.extension = os.path.splitext( path )[ 1 ][1:]
-        self.data = {}
 
 
 class OutputGeneratorVisitor(object):
@@ -122,7 +76,7 @@ class OutputGeneratorVisitor(object):
         output_path = os.path.join( self.config['output_path'], node.path )
 
         if not os.path.exists( output_path ):
-            print "#   Creating: " + node.path
+            print "#   Creating: /" + node.path
             os.makedirs( output_path );
     
     def visitContentNode( self, node ):
@@ -142,7 +96,7 @@ class OutputGeneratorVisitor(object):
         # If processors have been registered for the node extension, run them against the node 
         # content and write that to the output file.
         if node_processors:
-            print "# Processing: " + node.path
+            print "# Processing: /" + node.path
             try:
                 # Read content from content file
                 content_file = codecs.open( content_path, 'r', 'utf-8' )
@@ -165,7 +119,7 @@ class OutputGeneratorVisitor(object):
 
         # If no processors registered, just copy the file to the output folder
         else:
-            print "#    Copying: " + node.path
+            print "#    Copying: /" + node.path
             try:
                 shutil.copy2( content_path, output_path )
             except shutil.Error:
