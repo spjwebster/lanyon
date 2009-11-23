@@ -1,4 +1,5 @@
-import os, fnmatch
+import os
+import lanyon.glob
 
 class SiteNode( object ):
     def __init__( self, path ):
@@ -6,12 +7,18 @@ class SiteNode( object ):
         self.name = os.path.basename( path )
         pass
 
+    def relative_path_to( self, descendant ):
+        path = descendant.path
+        if self.path and path.startswith( self.path + '/' ):
+            path = path[ len( self.path ) + 1 : ]
+        return path
+        
     def visit( self, visitor ):
         method = 'visit' + self.__class__.__name__;
         if not hasattr( visitor, method ) or not callable( getattr( visitor, method ) ):
             method = 'visit'
         getattr( visitor, method )( self )        
-
+        
 
 class DirectoryNode( SiteNode ):
     def __init__( self, path ):
@@ -23,16 +30,21 @@ class DirectoryNode( SiteNode ):
         child.parent = self
         return child
 
-    def find( self, path_pattern, deep = True ):
+    def find( self, path_pattern, deep = True, start_node = None ):
         matches = []
         
+        start_node = start_node or self
+        
         for name, child in self.children.items():
-            print path_pattern + " vs. " + child.path
-            if fnmatch.fnmatch( child.path, path_pattern ):
+            
+            relative_path = start_node.relative_path_to( child )
+            
+            print path_pattern + " vs. " + relative_path
+            if lanyon.glob.match( relative_path, path_pattern ):
                 matches.append( child )
             
             if deep and child.__class__ == DirectoryNode:
-                matches.extend( child.find( path_pattern, deep ) or [] )
+                matches.extend( child.find( path_pattern, deep, start_node ) or [] )
         
         return matches
         
