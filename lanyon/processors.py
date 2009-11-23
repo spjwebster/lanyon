@@ -20,7 +20,6 @@ class YAMLFrontMatterExtractor( ContentProcessor ):
     def process( self, node, content ):
         # TODO: compile regex for class and reuse
         match = re.match( r"^---\n(.+)\n---\n", content )
-        print match
         if match:
             content = content[match.end():]
             yaml_content = match.group( 1 )
