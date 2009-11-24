@@ -62,6 +62,10 @@ class OutputGeneratorVisitor(object):
                 processors.YAMLFrontMatterExtractor( config ),
                 processors.Jinja2Renderer( config )
             ],
+            ('markdown','mdown','md'): [
+                processors.YAMLFrontMatterExtractor( config ),
+                processors.MarkdownRenderer( config )
+            ],
             ('css','js'): [
                 processors.IdentityRenderer( config )
             ]            
@@ -109,6 +113,7 @@ class OutputGeneratorVisitor(object):
 
                 try:
                     # Write processed content to same named file in the output directory
+                    # TODO: Allow overriding of output filename from node data or similar
                     with codecs.open( output_path, 'w', 'utf-8' ) as f:
                         f.write( content )
                         f.close()
