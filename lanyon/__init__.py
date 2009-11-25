@@ -2,11 +2,32 @@ import codecs, os, sys, shutil
 import structure, processors
 
 class Site( object ):
-    config = None
-    content_root = None
-    
     def __init__( self, config ):
         self.config = config
+        self.content_root = None
+
+        self.site_preprocessors = [
+        ]
+
+        # TODO: Allow processors to be registered only for specific content branches. This should be
+        # in addition to node file extension, with the option to specify one or the other or both.
+        self.content_processors = {
+            ('html'): [
+                processors.YAMLFrontMatterExtractor( config ),
+                processors.Jinja2Renderer( config )
+            ],
+            ('markdown','mdown','md'): [
+                processors.YAMLFrontMatterExtractor( config ),
+                processors.MarkdownRenderer( config )
+            ],
+            ('css','js'): [
+                processors.IdentityRenderer( config )
+            ]            
+        }
+        
+        self.site_postprocessors = [
+            processors.MarkdownFileRenamer( config )
+        ]
     
     def build_content_tree( self, content_path ):
         root = structure.RootNode( content_path )
@@ -42,34 +63,23 @@ class Site( object ):
         if not os.path.exists( self.config['output_path'] ):
             os.makedirs( self.config['output_path'] )
         
-        # toto: run site preprocessors
+        # Run site preprocessors
+        for processor in self.site_preprocessors:
+            processor.process( self )
         
         # Generate output from content tree
-        self.content_root.visit( OutputGeneratorVisitor( self.config ) );
+        self.content_root.visit( OutputGeneratorVisitor( self.config, self.content_processors ) );
 
-        # toto: run site postprocessors
+        # Run site postprocessors
+        for processor in self.site_postprocessors:
+            processor.process( self )
 
 
 class OutputGeneratorVisitor(object):
     
-    def __init__( self, config ):
+    def __init__( self, config, content_processors ):
         self.config = config;
-
-        # TODO: Allow processors to be registered only for specific content branches. This should be
-        # in addition to node file extension, with the option to specify one or the other or both.
-        self.content_processors = {
-            ('html'): [
-                processors.YAMLFrontMatterExtractor( config ),
-                processors.Jinja2Renderer( config )
-            ],
-            ('markdown','mdown','md'): [
-                processors.YAMLFrontMatterExtractor( config ),
-                processors.MarkdownRenderer( config )
-            ],
-            ('css','js'): [
-                processors.IdentityRenderer( config )
-            ]            
-        }
+        self.content_processors = content_processors
     
     def visit( self, node ):
         pass
