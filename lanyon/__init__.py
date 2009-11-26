@@ -6,11 +6,23 @@ class Site( object ):
         self.config = config
         self.content_root = None
 
+        # TODO: Populate pre-processors from configuration
         self.site_preprocessors = [
         ]
-
-        # TODO: Allow processors to be registered only for specific content branches. This should be
-        # in addition to node file extension, with the option to specify one or the other or both.
+        
+        self.content_processors = {}
+        try:
+            for extensions, processors in self.config['content_processors'].items():
+                for processor in processors:
+                    # TODO: Import processor class with try/except to handle import errors
+                    # __import__( processor )
+                    # TODO: Instantiate processor class with site config and add to 
+                    #       content_processors under the extensions key.
+                    pass
+        except:
+            pass
+        
+        # TODO: Remove once content processors are populated from configuration
         self.content_processors = {
             ('html'): [
                 content_processors.YAMLFrontMatterExtractor( config ),
@@ -25,6 +37,7 @@ class Site( object ):
             ]            
         }
         
+        # TODO: Populate post-processors from configuration
         self.site_postprocessors = [
             post_processors.MarkdownFileRenamer( config )
         ]
