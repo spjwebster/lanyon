@@ -1,5 +1,5 @@
 import codecs, os, sys, shutil
-import structure, processors
+import structure, content_processors, pre_processors, post_processors
 
 class Site( object ):
     def __init__( self, config ):
@@ -13,20 +13,20 @@ class Site( object ):
         # in addition to node file extension, with the option to specify one or the other or both.
         self.content_processors = {
             ('html'): [
-                processors.YAMLFrontMatterExtractor( config ),
-                processors.Jinja2Renderer( config )
+                content_processors.YAMLFrontMatterExtractor( config ),
+                content_processors.Jinja2Renderer( config )
             ],
             ('markdown','mdown','md'): [
-                processors.YAMLFrontMatterExtractor( config ),
-                processors.MarkdownRenderer( config )
+                content_processors.YAMLFrontMatterExtractor( config ),
+                content_processors.MarkdownRenderer( config )
             ],
             ('css','js'): [
-                processors.IdentityRenderer( config )
+                content_processors.IdentityRenderer( config )
             ]            
         }
         
         self.site_postprocessors = [
-            processors.MarkdownFileRenamer( config )
+            post_processors.MarkdownFileRenamer( config )
         ]
     
     def build_content_tree( self, content_path ):
