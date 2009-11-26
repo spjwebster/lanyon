@@ -1,8 +1,6 @@
 import re
 import jinja2, yaml, markdown
 
-# TODO: create MarkdownRenderer that uses template from node data
-
 class ContentProcessor(object):
     def __init__( self, config ):
         self.config = config
@@ -16,9 +14,9 @@ class IdentityRenderer( ContentProcessor ):
 
 class YAMLFrontMatterExtractor( ContentProcessor ):
     """ Extracts YAML "front matter" from the top of the content """
+    front_matter_re = re.compile( r"^---\n(.+?)\n---\n" )
     def process( self, node, content ):
-        # TODO: compile regex for class and reuse
-        match = re.match( r"^---\n(.+?)\n---\n", content )
+        match = re.match( self.front_matter_re, content )
         if match:
             content = content[match.end():]
             yaml_content = match.group( 1 )
