@@ -4,6 +4,7 @@ import structure, content_processors, pre_processors, post_processors
 class Site( object ):
     def __init__( self, config ):
         self.config = config
+        self.config[ 'site' ] = self
         self.content_root = None
 
         # TODO: Populate pre-processors from configuration

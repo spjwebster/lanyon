@@ -35,7 +35,12 @@ class Jinja2Renderer( ContentProcessor ):
         
     def process( self, node, content ):
         template = self.env.from_string( content )
-        return template.render( node.data )
+        template_data = { 
+            'node': node,
+            'site': self.config[ 'site' ]
+        }
+
+        return template.render( template_data )
 
 class MarkdownRenderer( ContentProcessor ):
     def __init__( self, config ):
@@ -56,9 +61,11 @@ class MarkdownRenderer( ContentProcessor ):
             raise Exception( 'MarkdownRenderer: Template \'' + node.data['template'] + '\' not found' )
         
         md = markdown.Markdown()
-        html_content = md.convert( content )
         
-        template_data = node.data.copy()
-        template_data.update( { 'content': html_content } )
+        template_data = { 
+            'node': node,
+            'site': self.config[ 'site' ],
+            'content': md.convert( content )
+        }
 
         return template.render( template_data )
