@@ -15,6 +15,7 @@ def main(argv):
                 'lanyon.content_processors.Jinja2Renderer'
             ],
             ('markdown','mdown'): [
+                'lanyon.content_processors.YAMLFrontMatterExtractor',
                 'lanyon.content_processors.MarkdownRenderer'
             ],
             ('js','css'): [

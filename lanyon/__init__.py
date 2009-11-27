@@ -13,30 +13,17 @@ class Site( object ):
         self.content_processors = {}
         try:
             for extensions, processors in self.config['content_processors'].items():
+                self.content_processors[ extensions ] = []
                 for processor in processors:
                     # TODO: Import processor class with try/except to handle import errors
-                    # __import__( processor )
-                    # TODO: Instantiate processor class with site config and add to 
-                    #       content_processors under the extensions key.
-                    pass
+                    try:
+                        processor_class = self._get_class( processor )
+                        self.content_processors[ extensions ].append( processor_class( config ) )
+                    except:
+                        print "### Could not instantiate '" + processor + "' content processor"
         except:
             pass
-        
-        # TODO: Remove once content processors are populated from configuration
-        self.content_processors = {
-            ('html'): [
-                content_processors.YAMLFrontMatterExtractor( config ),
-                content_processors.Jinja2Renderer( config )
-            ],
-            ('markdown','mdown','md'): [
-                content_processors.YAMLFrontMatterExtractor( config ),
-                content_processors.MarkdownRenderer( config )
-            ],
-            ('css','js'): [
-                content_processors.IdentityRenderer( config )
-            ]            
-        }
-        
+
         # TODO: Populate post-processors from configuration
         self.site_postprocessors = [
             post_processors.MarkdownFileRenamer( config )
@@ -66,8 +53,19 @@ class Site( object ):
                 relative_path = os.path.relpath( full_path, content_path )
                 parent_node.addChild( structure.ContentNode( relative_path ) )
         
-        return root             
+        return root
     
+    def _get_class( self, class_name ):
+        parts = class_name.split('.')
+        module_name = ".".join( parts[ :-1 ] )
+
+        module = __import__( module_name )
+
+        for part in parts[ 1: ]:
+            module = getattr( module, part )            
+
+        return module
+        
     def generate( self ):
         if self.content_root == None:
             self.content_root = self.build_content_tree( self.config['content_path'] )
