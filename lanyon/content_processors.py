@@ -7,23 +7,24 @@ class ContentProcessor(object):
     
     def process( self, node, content ):
         pass
-        
+
+ 
 class IdentityRenderer( ContentProcessor ):
     def process( self, node, content ):
         return content
 
-class YAMLFrontMatterExtractor( ContentProcessor ):
-    """ Extracts YAML "front matter" from the top of the content """
-    front_matter_re = re.compile( r"^---\n(.+?)\n---\n" )
+
+class YAMLFrontMatterRemover( ContentProcessor ):  
+    """ Removes YAML front matter from content """
+    front_matter_re = re.compile( r"^---\s*\n(?:(?:.|\n)+?)\n---\s*\n" )
+    
     def process( self, node, content ):
         match = re.match( self.front_matter_re, content )
         if match:
             content = content[match.end():]
-            yaml_content = match.group( 1 )
-            node.data.update( yaml.load( yaml_content ) )
-        
         return content
-        
+
+
 class Jinja2Renderer( ContentProcessor ):
     def __init__( self, config ):
         super( Jinja2Renderer, self ).__init__( config )
@@ -41,6 +42,7 @@ class Jinja2Renderer( ContentProcessor ):
         }
 
         return template.render( template_data )
+
 
 class MarkdownRenderer( ContentProcessor ):
     def __init__( self, config ):

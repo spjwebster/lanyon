@@ -14,8 +14,6 @@ def _build_regexp( pattern ):
 
     pattern = re.sub( r"\{(.+?)\}", _convert_sub_match_to_re, pattern )
 
-    print pattern
-
     return '^' + pattern + '$'
 
 def _convert_sub_match_to_re( match ):

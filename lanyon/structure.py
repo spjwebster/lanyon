@@ -39,7 +39,6 @@ class DirectoryNode( SiteNode ):
             
             relative_path = start_node.relative_path_to( child )
             
-            print path_pattern + " vs. " + relative_path
             if lanyon.glob.match( relative_path, path_pattern ):
                 matches.append( child )
             
@@ -62,5 +61,13 @@ class RootNode( DirectoryNode ):
 class ContentNode( SiteNode ):
     def __init__( self, path ):
         super( ContentNode, self ).__init__( path )
-        self.extension = os.path.splitext( path )[ 1 ][1:]
+        self.extension = os.path.splitext( self.name )[ 1 ][ 1 : ]
         self.data = {}
+
+
+class SiteNodeVisitor( object ):
+    def __init__( self, config ):
+        self.config = config
+    
+    def visit( self, node ):
+        pass

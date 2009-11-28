@@ -9,6 +9,7 @@ class Site( object ):
 
         # TODO: Populate pre-processors from configuration
         self.site_preprocessors = [
+            pre_processors.YAMLFrontMatterLoader( config )
         ]
         
         self.content_processors = {}
@@ -87,14 +88,11 @@ class Site( object ):
             processor.process( self )
 
 
-class OutputGeneratorVisitor(object):
+class OutputGeneratorVisitor( structure.SiteNodeVisitor ):
     
     def __init__( self, config, content_processors ):
-        self.config = config;
+        super( OutputGeneratorVisitor, self ).__init__( config )
         self.content_processors = content_processors
-    
-    def visit( self, node ):
-        pass
     
     def visitDirectoryNode( self, node ):
         # Get full path to content and output files
@@ -110,18 +108,24 @@ class OutputGeneratorVisitor(object):
         content_path = os.path.join( self.config['content_path'], node.path )
         output_path = os.path.join( self.config['output_path'], node.path )
 
+        # Build a list of content processors for th enode
+        node_content_processors = []
+        
+        
+        if self.config.has_key( 'yaml_extensions' ) and node.extension in self.config[ 'yaml_extensions' ]:
+            node_content_processors.append( content_processors.YAMLFrontMatterRemover( self.config ) )
+        
         # Find all processors that are registered for the node file extension. The first set of 
         # processors match wins, which is necessary as content processor order needs to be 
         # preserved.
-        node_processors = None
         for extensions, processors in self.content_processors.items():
             if node.extension in extensions:
-                node_processors = processors
+                node_content_processors.extend( processors )
                 break
         
         # If processors have been registered for the node extension, run them against the node 
         # content and write that to the output file.
-        if node_processors:
+        if node_content_processors:
             print "# Processing: /" + node.path
             try:
                 # Read content from content file
@@ -130,7 +134,7 @@ class OutputGeneratorVisitor(object):
                 content_file.close()
 
                 # Apply registered processors to content
-                for processor in node_processors:
+                for processor in node_content_processors:
                     content = processor.process( node, content )
 
                 try:
