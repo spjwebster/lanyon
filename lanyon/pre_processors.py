@@ -1,4 +1,4 @@
-import os, codecs, re
+import os, codecs, re, datetime
 import yaml, lanyon.structure
 
 class SitePreProcessor():
@@ -52,3 +52,21 @@ class YAMLFrontMatterLoader( SitePreProcessor ):
                 
             finally:
                 content_file.close()
+                
+class BlogPostProcessor( SitePreProcessor ):
+    def process( self, site ):
+        # Find all blog posts
+        # TODO: Allow post path pattern to come from processor config
+        posts = site.content_root.find( 'posts/**.{markdown,html}' )
+
+        # Exclude listings pages
+        # TODO: Allow listings page URLs to come from global config
+        posts = [ post for post in posts if not post.name == "index.html" ]
+        
+        # Convert 'postdate' data item into datetime stored on node
+        for post in posts:
+            post.postdate = datetime.datetime.strptime( str(post.data['postdate']), '%Y-%m-%dT%H:%M:%S' );
+        
+        # Sort posts by datetime and store on site object
+        posts.sort( key = lambda post: post.postdate )
+        site.posts = posts

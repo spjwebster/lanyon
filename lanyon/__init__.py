@@ -9,7 +9,8 @@ class Site( object ):
 
         # TODO: Populate pre-processors from configuration
         self.site_preprocessors = [
-            pre_processors.YAMLFrontMatterLoader( config )
+            pre_processors.YAMLFrontMatterLoader( config ),
+            pre_processors.BlogPostProcessor( config )
         ]
         
         self.content_processors = {}
