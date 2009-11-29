@@ -30,7 +30,7 @@ class DirectoryNode( SiteNode ):
         child.parent = self
         return child
 
-    def find( self, path_pattern, deep = True, start_node = None ):
+    def find( self, path_pattern, start_node = None ):
         matches = []
         
         start_node = start_node or self
@@ -42,8 +42,8 @@ class DirectoryNode( SiteNode ):
             if lanyon.glob.match( relative_path, path_pattern ):
                 matches.append( child )
             
-            if deep and child.__class__ == DirectoryNode:
-                matches.extend( child.find( path_pattern, deep, start_node ) or [] )
+            if child.__class__ == DirectoryNode:
+                matches.extend( child.find( path_pattern, start_node ) or [] )
         
         return matches
         
