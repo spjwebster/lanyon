@@ -16,7 +16,7 @@ _config = {
     
     # Content processors
     'content_processors': {
-        ('html'): [
+        ('html','rss','atom'): [
             'lanyon.content_processors.Jinja2Renderer'
         ],
         ('markdown','mdown','md'): [

@@ -1,4 +1,4 @@
-import re
+import re, datetime
 import jinja2, yaml, markdown
 
 class ContentProcessor(object):
@@ -36,9 +36,11 @@ class Jinja2Renderer( ContentProcessor ):
         
     def process( self, node, content ):
         template = self.env.from_string( content )
+
         template_data = { 
             'node': node,
-            'site': self.config[ 'site' ]
+            'site': self.config[ 'site' ],
+            'now': datetime.datetime.now()
         }
 
         return template.render( template_data )
@@ -67,6 +69,7 @@ class MarkdownRenderer( ContentProcessor ):
         template_data = { 
             'node': node,
             'site': self.config[ 'site' ],
+            'now': datetime.datetime.now(),
             'content': md.convert( content )
         }
 
