@@ -10,7 +10,8 @@ class Site( object ):
         # TODO: Populate pre-processors from configuration
         self.site_preprocessors = [
             pre_processors.YAMLFrontMatterLoader( config ),
-            pre_processors.BlogPostProcessor( config )
+            pre_processors.MarkdownOutputRenamer( config ),
+            pre_processors.BlogPostProcessor( config ),
         ]
         
         self.content_processors = {}
@@ -29,7 +30,6 @@ class Site( object ):
 
         # TODO: Populate post-processors from configuration
         self.site_postprocessors = [
-            post_processors.MarkdownFileRenamer( config )
         ]
     
     def build_content_tree( self, content_path ):
@@ -107,7 +107,7 @@ class OutputGeneratorVisitor( structure.SiteNodeVisitor ):
     def visitContentNode( self, node ):
         # Get full path to content and output files
         content_path = os.path.join( self.config['content_path'], node.path )
-        output_path = os.path.join( self.config['output_path'], node.path )
+        output_path = os.path.join( self.config['output_path'], node.output_path )
 
         # Build a list of content processors for th enode
         node_content_processors = []
@@ -140,7 +140,6 @@ class OutputGeneratorVisitor( structure.SiteNodeVisitor ):
 
                 try:
                     # Write processed content to same named file in the output directory
-                    # TODO: Allow overriding of output filename from node data or similar
                     with codecs.open( output_path, 'w', 'utf-8' ) as f:
                         f.write( content )
                         f.close()

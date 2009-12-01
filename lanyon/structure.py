@@ -63,6 +63,15 @@ class ContentNode( SiteNode ):
         super( ContentNode, self ).__init__( path )
         self.extension = os.path.splitext( self.name )[ 1 ][ 1 : ]
         self.data = {}
+        self._output_path = None
+    
+    def _get_output_path( self ):
+        return self._output_path or self.path
+    
+    def _set_output_path( self, path ):
+        self._output_path = path
+    
+    output_path = property( _get_output_path, _set_output_path )
 
 
 class SiteNodeVisitor( object ):

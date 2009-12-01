@@ -70,3 +70,14 @@ class BlogPostProcessor( SitePreProcessor ):
         # Sort posts by datetime and store on site object
         posts.sort( key = lambda post: post.postdate )
         site.posts = posts
+
+
+class MarkdownOutputRenamer( SitePreProcessor ):
+    def process( self, site ):
+        # Find all markdown files
+        # TODO: Allow markdown path pattern to come from processor config
+        markdown_nodes = site.content_root.find( '**.{markdown,mdown,md}' )
+
+        # Rename markdown posts to .html
+        for node in markdown_nodes:
+            node.output_path = os.path.splitext( node.path )[ 0 ] + '.html'
