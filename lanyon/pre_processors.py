@@ -1,7 +1,7 @@
 import os, codecs, re, datetime
 import yaml, lanyon.structure
 
-class SitePreProcessor():
+class SitePreProcessor(object):
     def __init__( self, config ):
         self.config = config
     
@@ -11,7 +11,6 @@ class SitePreProcessor():
 
 class YAMLFrontMatterLoader( SitePreProcessor ):
     """ Extracts YAML front matter from all content nodes and stores it the node data """
-    
     def process( self, site ):
         yaml_visitor = self._YAMLDataExtractor( self.config )
         site.content_root.visit( yaml_visitor )
@@ -54,23 +53,52 @@ class YAMLFrontMatterLoader( SitePreProcessor ):
                 content_file.close()
                 
 class BlogPostProcessor( SitePreProcessor ):
+    tag_slug_re = re.compile("[^a-z0-9-]", re.IGNORECASE )
+
+    def __init__( self, config, options ):
+        super( BlogPostProcessor, self ).__init__( config )
+        self.options = options
+    
     def process( self, site ):
+        # TODO: Deal with missing options['path']
+        
         # Find all blog posts
-        # TODO: Allow post path pattern to come from processor config
-        posts = site.content_root.find( 'posts/**.{markdown,html}' )
+        posts = site.content_root.find( self.options[ 'path' ] )
 
         # Exclude listings pages
         # TODO: Allow listings page URLs to come from global config
         posts = [ post for post in posts if not post.name == "index.html" ]
-        
+                
         # Convert 'postdate' data item into datetime stored on node
         for post in posts:
             post.postdate = datetime.datetime.strptime( str(post.data['postdate']), '%Y-%m-%dT%H:%M:%S' );
-        
+
         # Sort posts by datetime and store on site object
         posts.sort( key = lambda post: post.postdate )
         site.posts = posts
 
+        # Collate tags and posts
+        tags = {}
+        for post in posts:
+            if not post.data.has_key('tags'):
+                continue
+            for tag_name in post.data['tags']:
+                if not tags.has_key(tag_name):
+                    tags[tag_name] = {
+                        'name': tag_name,
+                        'slug': self.slugify( tag_name ),
+                        'posts': [],
+                    }
+                tags[tag_name]['posts'].append( post )
+                
+        # Posts are already date-ordered, so no need to wort twice
+        site.tags = tags
+        
+    def slugify( self, tag_name ):
+        slug = re.sub( self.tag_slug_re, '-', tag_name.lower() )
+        slug = re.sub( '-+', '-', slug )
+        return slug
+        
 
 class MarkdownOutputRenamer( SitePreProcessor ):
     def process( self, site ):

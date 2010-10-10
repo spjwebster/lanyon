@@ -11,7 +11,9 @@ class Site( object ):
         self.site_preprocessors = [
             pre_processors.YAMLFrontMatterLoader( config ),
             pre_processors.MarkdownOutputRenamer( config ),
-            pre_processors.BlogPostProcessor( config ),
+            pre_processors.BlogPostProcessor( config, { 
+                'path': '20[0-9][0-9]/**.{markdown,html}'
+            } ),
         ]
         
         self.content_processors = {}
@@ -30,6 +32,9 @@ class Site( object ):
 
         # TODO: Populate post-processors from configuration
         self.site_postprocessors = [
+            post_processors.TagPageGenerator( config, {
+                'template': '_tag.html'
+            } ),
         ]
     
     def build_content_tree( self, content_path ):
