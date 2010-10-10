@@ -65,6 +65,7 @@ class ContentNode( SiteNode ):
         self.data = {}
         self._output_path = None
     
+    # TODO: Allow output_path to be overridden for directories too
     def _get_output_path( self ):
         return self._output_path or self.path
     

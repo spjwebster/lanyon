@@ -36,11 +36,10 @@ class Jinja2Renderer( ContentProcessor ):
         
     def process( self, node, content ):
         template = self.env.from_string( content )
-
         template_data = { 
             'node': node,
             'site': self.config[ 'site' ],
-            'now': datetime.datetime.now()
+            'now': datetime.datetime.utcnow().replace( microsecond=0 )
         }
 
         return template.render( template_data )
@@ -69,7 +68,7 @@ class MarkdownRenderer( ContentProcessor ):
         template_data = { 
             'node': node,
             'site': self.config[ 'site' ],
-            'now': datetime.datetime.now(),
+            'now': datetime.datetime.utcnow().replace( microsecond=0 ),
             'content': md.convert( content )
         }
 
