@@ -55,6 +55,54 @@ class TagPageGenerator( SitePostProcessor ):
                     f.close()
             except IOError:
                 print >> sys.stderr, "## Error: Couldn't open " + output_path + " for writing"
-            
 
+# TODO: Abstract the tag processing logic for this and TagPageGenerator into a
+#       single base class.  
+class TagFeedGenerator( SitePostProcessor ):
+    
+    def __init__( self, config, options ):
+        # TODO: Fix
+        SitePostProcessor.__init__( self, config )
+        self.options = options
+
+        # Set up jinja2 environment to load templates from layout directory
+        env = jinja2.Environment(
+            loader = jinja2.FileSystemLoader( [ self.config['layout_path'] ] ),
+        )
+        self.template = env.get_template( self.options['template'] )
         
+        
+    def process( self, site ):
+        print '# TagFeedGenerator: Generating tag feeds'
+        feed_output_path = os.path.join( self.config['output_path'], 'feed' )
+        now = datetime.datetime.utcnow().replace( microsecond=0 )
+        
+        if not os.path.exists( feed_output_path ):
+            os.makedirs( feed_output_path )
+        
+        for tag_name in site.tags.keys():
+            tag = site.tags[tag_name];
+            
+            node = lanyon.structure.ContentNode( os.path.join( 'feed', tag['slug'] + '.atom' ) )
+            
+            print '## Generating: /' + node.path;
+            
+            output_path = os.path.join(  self.config['output_path'], node.output_path )
+
+            template_data = {
+                'site': site,
+                'tag': tag,
+                'node': node,
+                'now': now
+            }
+
+            content = self.template.render( template_data )
+            
+            try:
+                # Write processed content to same named file in the output directory
+                with codecs.open( output_path, 'w', 'utf-8' ) as f:
+                    f.write( content )
+                    f.close()
+            except IOError:
+                print >> sys.stderr, "## Error: Couldn't open " + output_path + " for writing"
+           

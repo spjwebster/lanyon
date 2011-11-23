@@ -35,6 +35,9 @@ class Site( object ):
             post_processors.TagPageGenerator( config, {
                 'template': '_tag.html'
             } ),
+            post_processors.TagFeedGenerator( config, {
+                'template': '_tag.atom'
+            } ),
         ]
     
     def build_content_tree( self, content_path ):
