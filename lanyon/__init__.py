@@ -7,14 +7,19 @@ class Site( object ):
         self.config[ 'site' ] = self
         self.content_root = None
 
-        # TODO: Populate pre-processors from configuration
+        # Must have front matter preprocessor
         self.site_preprocessors = [
             pre_processors.YAMLFrontMatterLoader( config ),
-            pre_processors.MarkdownOutputRenamer( config ),
-            pre_processors.BlogPostProcessor( config, { 
-                'path': '20[0-9][0-9]/**.{markdown,html}'
-            } ),
         ]
+
+        # Populate remaining pre-processors from configuration
+        # TODO: Allow just class naem as plain string
+        for processor in self.config['pre_processors']:
+            processor_class = self._get_class( processor['class'] )
+
+            self.site_preprocessors.append(
+                processor_class( config, processor['options'] )
+            )
         
         self.content_processors = {}
         try:
@@ -30,15 +35,15 @@ class Site( object ):
         except:
             pass
 
-        # TODO: Populate post-processors from configuration
-        self.site_postprocessors = [
-            post_processors.TagPageGenerator( config, {
-                'template': '_tag.html'
-            } ),
-            post_processors.TagFeedGenerator( config, {
-                'template': '_tag.atom'
-            } ),
-        ]
+        # Populate remaining pre-processors from configuration
+        # TODO: Allow just class naem as plain string
+        self.site_postprocessors = []
+        for processor in self.config['post_processors']:
+            processor_class = self._get_class( processor['class'] )
+
+            self.site_postprocessors.append(
+                processor_class( config, processor['options'] )
+            )
     
     def build_content_tree( self, content_path ):
         root = structure.RootNode( content_path )

@@ -2,8 +2,9 @@ import os, codecs, re, datetime
 import yaml, lanyon.structure
 
 class SitePreProcessor(object):
-    def __init__( self, config ):
+    def __init__( self, config, options = {} ):
         self.config = config
+        self.options = options
     
     def process( self, site ):
         pass

@@ -5,6 +5,7 @@ from optparse import OptionParser
 import cherrypy
 from lanyon import Site
 
+#TODO: Load this config from the current working directory
 _config = {
     # Paths
     'layout_path': os.path.join( os.getcwdu(), 'layout' ),
@@ -14,6 +15,20 @@ _config = {
     # File extensions to examine for YAML front matter
     'yaml_extensions': ( 'html', 'markdown', 'mdown', 'md', 'js', 'css' ),
     
+    # Site pre-processors
+    'pre_processors': [
+        {
+            'class': 'lanyon.pre_processors.MarkdownOutputRenamer',
+            'options': {},
+        },
+        {
+            'class': 'lanyon.pre_processors.BlogPostProcessor',
+            'options':  {
+                'path': '20[0-9][0-9]/**.{markdown,html}'
+            },
+        },
+    ],
+
     # Content processors
     'content_processors': {
         ('html','rss','atom'): [
@@ -29,8 +44,19 @@ _config = {
     
     # Site post-processors
     'post_processors': [
-        'lanyon.post_processors.MarkdownFileRenamer'
-    ]
+        {
+            'class': 'lanyon.post_processors.TagPageGenerator',
+            'options': {
+                'template': '_tag.html'
+            },
+        },
+        {
+            'class': 'lanyon.post_processors.TagFeedGenerator',
+            'options': {
+                'template': '_tag.atom'
+            },
+        },
+    ],
 }
     
 def main( argv ):
