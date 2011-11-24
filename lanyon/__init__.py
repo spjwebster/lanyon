@@ -29,18 +29,30 @@ class Site( object ):
         
         # Poplate content processors from config
         self.content_processors = {}
-        try:
-            for extensions, processors in self.config['content_processors'].items():
-                self.content_processors[ extensions ] = []
-                for processor in processors:
-                    # TODO: Import processor class with try/except to handle import errors
-                    try:
-                        processor_class = self._get_class( processor )
-                        self.content_processors[ extensions ].append( processor_class( config ) )
-                    except:
-                        print "### Could not instantiate '" + processor + "' content processor"
-        except:
-            pass
+        for processor in self.config['content_processors']:
+            processor_class = self._get_class( processor['class'] )
+            try:
+                processor_instance = processor_class( config )
+                for extension in processor['extensions']:
+                    if self.content_processors.has_key(extension) == False:
+                        self.content_processors[extension] = []
+                    self.content_processors[extension].append( processor_instance )
+            except:
+                print "### Could not instantiate '" + processor['class'] + "' content processor"
+                
+
+#        try:
+#            for extensions, processors in self.config['content_processors'].items():
+#                self.content_processors[ extensions ] = []
+#                for processor in processors:
+#                    # TODO: Import processor class with try/except to handle import errors
+#                    try:
+#                        processor_class = self._get_class( processor )
+#                        self.content_processors[ extensions ].append( processor_class( config ) )
+#                    except:
+#                        print "### Could not instantiate '" + processor + "' content processor"
+#        except:
+#            pass
 
         # Populate rpost-processors from configuration
         self.site_postprocessors = []

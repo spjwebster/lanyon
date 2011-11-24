@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-import os, sys
+import os, sys, codecs, json, cherrypy
 from optparse import OptionParser
-import cherrypy
 from lanyon import Site
 
 #TODO: Load this config from the current working directory
@@ -27,17 +26,20 @@ _config = {
     ],
 
     # Content processors
-    'content_processors': {
-        ('html','rss','atom'): [
-            'lanyon.content_processors.Jinja2Renderer'
-        ],
-        ('markdown','mdown','md'): [
-            'lanyon.content_processors.MarkdownRenderer'
-        ],
-        ('js','css'): [
-            'lanyon.content_processors.IdentityRenderer'
-        ]
-    },
+    'content_processors': [
+        {
+            'class': 'lanyon.content_processors.Jinja2Renderer',
+            'extensions': ('html','rss','atom'),
+        },
+        {
+            'class': 'lanyon.content_processors.MarkdownRenderer',
+            'extensions': ('markdown','mdown','md'),
+        },
+        {
+            'class': 'lanyon.content_processors.IdentityRenderer',
+            'extensions': ('js', 'css'),
+        }
+    ],
     
     # Site post-processors
     'post_processors': [
