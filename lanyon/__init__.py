@@ -13,14 +13,21 @@ class Site( object ):
         ]
 
         # Populate remaining pre-processors from configuration
-        # TODO: Allow just class naem as plain string
         for processor in self.config['pre_processors']:
+            # Allow just class naem as plain string
+            if isinstance(processor, str):
+                processor = {
+                    'class': processor,
+                    'options': {},
+                }
+
             processor_class = self._get_class( processor['class'] )
 
             self.site_preprocessors.append(
                 processor_class( config, processor['options'] )
             )
         
+        # Poplate content processors from config
         self.content_processors = {}
         try:
             for extensions, processors in self.config['content_processors'].items():
@@ -35,10 +42,16 @@ class Site( object ):
         except:
             pass
 
-        # Populate remaining pre-processors from configuration
-        # TODO: Allow just class naem as plain string
+        # Populate rpost-processors from configuration
         self.site_postprocessors = []
         for processor in self.config['post_processors']:
+            # Allow just class naem as plain string
+            if isinstance(processor, str):
+                processor = {
+                    'class': processor,
+                    'options': {},
+                }
+
             processor_class = self._get_class( processor['class'] )
 
             self.site_postprocessors.append(

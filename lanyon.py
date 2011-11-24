@@ -17,10 +17,7 @@ _config = {
     
     # Site pre-processors
     'pre_processors': [
-        {
-            'class': 'lanyon.pre_processors.MarkdownOutputRenamer',
-            'options': {},
-        },
+        'lanyon.pre_processors.MarkdownOutputRenamer',
         {
             'class': 'lanyon.pre_processors.BlogPostProcessor',
             'options':  {
