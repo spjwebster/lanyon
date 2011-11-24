@@ -57,25 +57,30 @@ _config = {
 }
     
 def main( argv ):
-    parser = OptionParser( 'usage: %prog [options]' )
-    parser.add_option( '-g', '--generate', dest="generate", action="store_true",
-        help="Generate the site from the current working directory" )
-    parser.add_option( '-s', '--server', dest="server", action="store_true",
-        help="Start a server on port 8080 using the output directory as the site root" )
-    
-    (options, args) = parser.parse_args( argv )
+    command = argv[0]
 
-    if options.generate:
-        _generate()
+    if command == "generate":
+        _generate( argv[1:] )
     
-    elif options.server:
-        _start_server()
+    elif command == "serve":
+        _start_server( argv[1:] )
     
     else:
-        parser.error( 'Generate or server?' )
+        print 'Usage: lanyon (generate|serve) [options]';
 
-def _start_server( port = 8080 ):
-    print "# Starting server on port %s: " % str( port )
+def _start_server( args ):
+    parser = OptionParser( 'usage: %prog serve [options]' )
+    parser.add_option( 
+        '-p', '--port', 
+        dest="port",
+        default="8080",
+        help="The port to listen on"
+    )
+
+    (options, args) = parser.parse_args( args )
+
+
+    print "# Starting server on port %s: " % str( options.port )
     
     class WebRoot:
         pass
@@ -83,7 +88,8 @@ def _start_server( port = 8080 ):
     cherrypy.config.update( {
         'environment': 'production',
         'log.error_file': 'site.log',
-        'log.screen': True
+        'log.screen': True,
+        'server.socket_port': int(options.port)
     } )
     
     cherrypy.quickstart( WebRoot(), '/', config = {
@@ -94,7 +100,7 @@ def _start_server( port = 8080 ):
         }
     } )
 
-def _generate():
+def _generate( args ):
     site = Site( config = _config )    
     print "# Generating site: "
     site.generate()
