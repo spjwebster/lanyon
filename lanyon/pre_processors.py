@@ -1,4 +1,4 @@
-import os, codecs, re, datetime
+import os, codecs, re, datetime, sys
 import yaml, lanyon.structure
 
 class SitePreProcessor(object):
@@ -72,7 +72,11 @@ class BlogPostProcessor( SitePreProcessor ):
                 
         # Convert 'postdate' data item into datetime stored on node
         for post in posts:
-            post.postdate = datetime.datetime.strptime( str(post.data['postdate']), '%Y-%m-%dT%H:%M:%S' );
+            try:
+                post.postdate = datetime.datetime.strptime( str(post.data['postdate']), '%Y-%m-%dT%H:%M:%S' );
+            except KeyError:
+                sys.stderr.write("Couldn't find postdate in '%s'" % post.path);
+                raise
 
         # Sort posts by datetime and store on site object
         posts.sort( key = lambda post: post.postdate )
