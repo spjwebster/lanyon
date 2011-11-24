@@ -15,7 +15,7 @@ class Site( object ):
         # Populate remaining pre-processors from configuration
         for processor in self.config['pre_processors']:
             # Allow just class naem as plain string
-            if isinstance(processor, str):
+            if isinstance(processor, basestring):
                 processor = {
                     'class': processor,
                     'options': {},
@@ -58,7 +58,7 @@ class Site( object ):
         self.site_postprocessors = []
         for processor in self.config['post_processors']:
             # Allow just class naem as plain string
-            if isinstance(processor, str):
+            if isinstance(processor, basestring):
                 processor = {
                     'class': processor,
                     'options': {},
