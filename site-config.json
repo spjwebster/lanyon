@@ -1,0 +1,48 @@
+{
+    "content_path": "./content/",
+    "layout_path": "./layout/",
+    "output_path": "./output/",
+
+    "yaml_extensions": [ "html", "markdown", "mdown", "md", "js", "css" ],
+
+    "pre_processors": [
+        "lanyon.pre_processors.MarkdownOutputRenamer",
+        {
+            "class": "lanyon.pre_processors.BlogPostProcessor",
+            "options": {
+                "path": "20[0-9][0-9]/**.{markdown,mdown,md,html}"
+            }
+        }
+    ],
+
+    "content_processors": [
+        {
+            "class": "lanyon.content_processors.MarkdownRenderer",
+            "extensions": [ "markdown", "mdown", "md" ]
+        },
+        {
+            "class": "lanyon.content_processors.Jinja2Renderer",
+            "extensions": [ "html", "rss", "atom" ]
+        },
+        {
+            "class": "lanyon.content_processors.IdentityRenderer",
+            "extensions": [ "js", "css" ]
+        }
+    ],
+
+
+    "post_processors": [
+        {
+            "class": "lanyon.post_processors.TagPageGenerator",
+            "options": {
+                "template": "_tag.html"
+            }
+        },
+        {
+            "class": "lanyon.post_processors.TagFeedGenerator",
+            "options": {
+                "template": "_tag.atom"
+            }
+        }
+    ]
+}

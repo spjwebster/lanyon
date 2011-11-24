@@ -4,59 +4,6 @@ import os, sys, codecs, json, cherrypy
 from optparse import OptionParser
 from lanyon import Site
 
-#TODO: Load this config from the current working directory
-_config = {
-    # Paths
-    'layout_path': os.path.join( os.getcwdu(), 'layout' ),
-    'content_path': os.path.join( os.getcwdu(), 'content' ),
-    'output_path': os.path.join( os.getcwdu(), 'output' ),
-    
-    # File extensions to examine for YAML front matter
-    'yaml_extensions': ( 'html', 'markdown', 'mdown', 'md', 'js', 'css' ),
-    
-    # Site pre-processors
-    'pre_processors': [
-        'lanyon.pre_processors.MarkdownOutputRenamer',
-        {
-            'class': 'lanyon.pre_processors.BlogPostProcessor',
-            'options':  {
-                'path': '20[0-9][0-9]/**.{markdown,html}'
-            },
-        },
-    ],
-
-    # Content processors
-    'content_processors': [
-        {
-            'class': 'lanyon.content_processors.Jinja2Renderer',
-            'extensions': ('html','rss','atom'),
-        },
-        {
-            'class': 'lanyon.content_processors.MarkdownRenderer',
-            'extensions': ('markdown','mdown','md'),
-        },
-        {
-            'class': 'lanyon.content_processors.IdentityRenderer',
-            'extensions': ('js', 'css'),
-        }
-    ],
-    
-    # Site post-processors
-    'post_processors': [
-        {
-            'class': 'lanyon.post_processors.TagPageGenerator',
-            'options': {
-                'template': '_tag.html'
-            },
-        },
-        {
-            'class': 'lanyon.post_processors.TagFeedGenerator',
-            'options': {
-                'template': '_tag.atom'
-            },
-        },
-    ],
-}
     
 def main( argv ):
     command = argv[0]
@@ -103,7 +50,24 @@ def _start_server( args ):
     } )
 
 def _generate( args ):
-    site = Site( config = _config )    
+    parser = OptionParser( 'usage: %prog generate [options]' )
+    parser.add_option( 
+        '-c', '--config', 
+        dest="config_path",
+        default="site-config.json",
+        help="The path to the configuration file to use for site genration"
+    )
+    (options, args) = parser.parse_args( args )
+
+    # TODO: Add safety net
+    print "# Reading config '" + options.config_path + "':"
+    config_path = os.path.join( os.getcwdu(), options.config_path )
+    config_file = codecs.open( config_path, 'r', 'utf-8' )
+    config = json.load( config_file )
+    config_file.close()
+    config_file = None
+
+    site = Site( config = config )
     print "# Generating site: "
     site.generate()
 
