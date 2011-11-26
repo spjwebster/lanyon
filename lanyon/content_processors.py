@@ -1,9 +1,11 @@
 import re, datetime
 import jinja2, yaml, markdown
+from subprocess import Popen, PIPE
 
 class ContentProcessor(object):
-    def __init__( self, config ):
+    def __init__( self, config, options = {} ):
         self.config = config
+        self.options = options
     
     def process( self, node, content ):
         pass
@@ -26,8 +28,8 @@ class YAMLFrontMatterRemover( ContentProcessor ):
 
 
 class Jinja2Renderer( ContentProcessor ):
-    def __init__( self, config ):
-        super( Jinja2Renderer, self ).__init__( config )
+    def __init__( self, config, options ):
+        super( Jinja2Renderer, self ).__init__( config, options )
         
         # Set up jinja2 environment to load templates from layout directory
         self.env = jinja2.Environment(
@@ -46,8 +48,8 @@ class Jinja2Renderer( ContentProcessor ):
 
 
 class MarkdownRenderer( ContentProcessor ):
-    def __init__( self, config ):
-        super( MarkdownRenderer, self ).__init__( config )
+    def __init__( self, config, options ):
+        super( MarkdownRenderer, self ).__init__( config, options )
         
         # Set up jinja2 environment to load templates from layout directory
         self.env = jinja2.Environment(
@@ -73,3 +75,21 @@ class MarkdownRenderer( ContentProcessor ):
         }
 
         return template.render( template_data )
+
+class ExternalProcessor( ContentProcessor ):
+    """ 
+        Processes content through an external process.
+
+        External process must accept input from stdin and write output to
+        stdout.
+    """
+    def process( self, node, content ):
+        #TODO: Throw a more useful exception for command not found errors
+        proc = Popen([self.options['cmd']], shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        
+        (output, err) = proc.communicate(input=content)
+
+        if err:
+            raise Exception( 'ExternalProcessor: ' + err)
+
+        return output

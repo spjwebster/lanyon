@@ -25,9 +25,19 @@
             "extensions": [ "html", "rss", "atom" ]
         },
         {
-            "class": "lanyon.content_processors.IdentityRenderer",
-            "extensions": [ "js", "css" ]
-        }
+            "class": "lanyon.content_processors.ExternalProcessor",
+            "extensions": [ "css" ],
+            "options": {
+                "cmd": "java -jar yuicompressor-2.4.7.jar --type=css"
+            }
+        },
+        {
+            "class": "lanyon.content_processors.ExternalProcessor",
+            "extensions": [ "js" ],
+            "options": {
+                "cmd": "java -jar yuicompressor-2.4.7.jar --type=js"
+            }
+        }        
     ],
 
 
