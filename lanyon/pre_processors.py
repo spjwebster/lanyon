@@ -114,3 +114,15 @@ class MarkdownOutputRenamer( SitePreProcessor ):
         # Rename markdown posts to .html
         for node in markdown_nodes:
             node.output_path = os.path.splitext( node.path )[ 0 ] + '.html'
+
+class StaticAssetAggregator( SitePreProcessor ):
+
+    class StaticAssetRollupNode( lanyon.structure.ContentNode ):
+        def __init__(self, path, content):
+            super(StaticAssetRollupNode, self).__init__( path );
+
+        def get_content( self, content_path ):
+            pass
+    
+    def process( self, site ):
+        pass
