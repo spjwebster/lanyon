@@ -1,4 +1,4 @@
-import os
+import os, codecs, inspect
 import lanyon.glob
 
 class SiteNode( object ):
@@ -14,10 +14,13 @@ class SiteNode( object ):
         return path
         
     def visit( self, visitor ):
-        method = 'visit' + self.__class__.__name__;
-        if not hasattr( visitor, method ) or not callable( getattr( visitor, method ) ):
-            method = 'visit'
-        getattr( visitor, method )( self )        
+        class_hierarchy = inspect.getmro(self.__class__)
+        visit_methods = ['visit' + x.__name__ for x in class_hierarchy]
+        for method in visit_methods:
+            if hasattr( visitor, method ) and callable( getattr( visitor, method ) ):
+                return getattr( visitor, method )( self )
+        
+        return visitor.visit(self);
         
 
 class DirectoryNode( SiteNode ):
@@ -73,6 +76,17 @@ class ContentNode( SiteNode ):
         self._output_path = path
     
     output_path = property( _get_output_path, _set_output_path )
+
+    #TODO: Find a cleaner way for content nodes to know how to find their
+    #      underlying files.
+    def get_content( self, content_path ):
+        # Read content from content file
+        file_path = os.path.abspath(os.path.join( content_path, self.path ))
+        content_file = codecs.open( file_path, 'r', 'utf-8' )
+        content = content_file.read()
+        content_file.close()
+
+        return content
 
 
 class SiteNodeVisitor( object ):

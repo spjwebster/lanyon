@@ -158,10 +158,7 @@ class OutputGeneratorVisitor( structure.SiteNodeVisitor ):
         if node_content_processors:
             print "# Processing: /" + node.path
             try:
-                # Read content from content file
-                content_file = codecs.open( content_path, 'r', 'utf-8' )
-                content = content_file.read()
-                content_file.close()
+                content = node.get_content( self.config['content_path'] )
 
                 # Apply registered processors to content
                 for processor in node_content_processors:
