@@ -19,6 +19,12 @@ def main( argv ):
 
 def _start_server( args ):
     parser = OptionParser( 'usage: %prog serve [options]' )
+    parser.add_option(
+        '-c', '--config', 
+        dest="config_path",
+        default="site-config.json",
+        help="The path to the configuration file to use for site genration"
+    )
     parser.add_option( 
         '-p', '--port', 
         dest="port",
@@ -28,6 +34,9 @@ def _start_server( args ):
 
     (options, args) = parser.parse_args( args )
 
+    print options.config_path
+
+    config = _read_config( options.config_path )
 
     print "# Starting server on port %s: " % str( options.port )
     
@@ -44,14 +53,14 @@ def _start_server( args ):
     cherrypy.quickstart( WebRoot(), '/', config = {
         '/': {
             'tools.staticdir.on': True,
-            'tools.staticdir.dir': _config[ 'output_path' ],
+            'tools.staticdir.dir': os.path.abspath(config['output_path']),
             'tools.staticdir.index': 'index.html'
         }
     } )
 
 def _generate( args ):
     parser = OptionParser( 'usage: %prog generate [options]' )
-    parser.add_option( 
+    parser.add_option(
         '-c', '--config', 
         dest="config_path",
         default="site-config.json",
@@ -59,17 +68,23 @@ def _generate( args ):
     )
     (options, args) = parser.parse_args( args )
 
+    config = _read_config( options.config_path )
+
+    site = Site( config = config )
+
+    print "# Generating site: "
+    site.generate()
+
+def _read_config( config_path ):
     # TODO: Add safety net
-    print "# Reading config '" + options.config_path + "':"
-    config_path = os.path.join( os.getcwdu(), options.config_path )
-    config_file = codecs.open( config_path, 'r', 'utf-8' )
+    print "# Reading config '" + config_path + "':"
+    full_path = os.path.join( os.getcwdu(), config_path )
+    config_file = codecs.open( full_path, 'r', 'utf-8' )
     config = json.load( config_file )
     config_file.close()
     config_file = None
 
-    site = Site( config = config )
-    print "# Generating site: "
-    site.generate()
+    return config
 
 if __name__ == "__main__":
     main(sys.argv[1:])
