@@ -37,6 +37,11 @@ class DirectoryNode( SiteNode ):
         child.parent = self
         return child
 
+    def remove_child( self, child ):
+        del self.children[ child.name ]
+        child.parent = None
+        return child
+
     def find( self, path_pattern, start_node = None ):
         matches = []
         
@@ -53,6 +58,11 @@ class DirectoryNode( SiteNode ):
                 matches.extend( child.find( path_pattern, start_node ) or [] )
         
         return matches
+
+    def find_first( self, path_pattern ):
+        matches = self.find( path_pattern )
+        matches.reverse()
+        return matches.pop()
         
     def visit( self, visitor ):
         super( DirectoryNode, self ).visit( visitor )
