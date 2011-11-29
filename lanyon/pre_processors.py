@@ -1,4 +1,4 @@
-import os, codecs, re, datetime, sys
+import os, codecs, re, datetime, sys, hashlib
 import yaml, lanyon.structure
 
 class SitePreProcessor(object):
@@ -113,7 +113,7 @@ class MarkdownOutputRenamer( SitePreProcessor ):
 
 
 class StaticAssetBundleGenerator( SitePreProcessor ):
-    class StaticAssetBundleNode( lanyon.structure.ContentNode ):
+    class _StaticAssetBundleNode( lanyon.structure.ContentNode ):
         def __init__(self, path, content):
             super(self.__class__, self).__init__( path )
             self._content = content
@@ -133,6 +133,10 @@ class StaticAssetBundleGenerator( SitePreProcessor ):
                     content += node.get_content(self.config['content_path'])
                     node.parent.remove_child(node)
             
+            # Calculate version number based on content
+            version = hashlib.sha1(content).hexdigest()[:16]
+            print "##            - version: " + version
+
             # TODO: Create target dir (and any missing ancestors) if it doesn't 
             #       exist
             target_dir_node = site.content_root.find_first(
@@ -140,10 +144,11 @@ class StaticAssetBundleGenerator( SitePreProcessor ):
             )
 
             # Add bundle node to target dir
-            target_dir_node.add_child(
-                # TODO: is there a better way to refer to the inner class?
-                self.__class__.StaticAssetBundleNode(bundle['output_path'], content)
+            bundle_node = self.__class__._StaticAssetBundleNode(
+                bundle['output_path'],
+                content
             )
-
+            bundle_node.data['version'] = version
+            target_dir_node.add_child( bundle_node )
 
 
