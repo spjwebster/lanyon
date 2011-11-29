@@ -76,14 +76,14 @@ class Site( object ):
             for directory in directories:
                 full_path = os.path.join( path, directory )
                 relative_path = os.path.relpath( full_path, content_path )
-                directory_node = parent_node.addChild( structure.DirectoryNode( relative_path ) )
+                directory_node = parent_node.add_child( structure.DirectoryNode( relative_path ) )
                 directory_nodes[ full_path ] = directory_node
         
             # Add all files as ContentNode instances
             for filename in files:
                 full_path = os.path.join( path, filename )
                 relative_path = os.path.relpath( full_path, content_path )
-                parent_node.addChild( structure.ContentNode( relative_path ) )
+                parent_node.add_child( structure.ContentNode( relative_path ) )
         
         return root
     

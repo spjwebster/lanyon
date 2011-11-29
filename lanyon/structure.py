@@ -28,7 +28,11 @@ class DirectoryNode( SiteNode ):
         super( DirectoryNode, self ).__init__( path )
         self.children = {}
         
-    def addChild( self, child ):
+    def add_child( self, child ):
+        # TODO: Make this work
+        # if child.parent:
+        #     child.prent.remove_child(child)
+        
         self.children[ child.name ] = child
         child.parent = self
         return child

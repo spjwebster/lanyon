@@ -4,10 +4,10 @@ import nose.tools
 class TestDirectoryFind:
     def setUp(self):
         self.root = structure.RootNode( '' )
-        self.root.addChild( structure.ContentNode( 'index.html' ) )
-        self.posts_dir = self.root.addChild( structure.DirectoryNode( 'posts' ) )
-        self.posts_dir.addChild( structure.ContentNode( 'posts/index.html') )
-        self.posts_dir.addChild( structure.ContentNode( 'posts/test.html') )
+        self.root.add_child( structure.ContentNode( 'index.html' ) )
+        self.posts_dir = self.root.add_child( structure.DirectoryNode( 'posts' ) )
+        self.posts_dir.add_child( structure.ContentNode( 'posts/index.html') )
+        self.posts_dir.add_child( structure.ContentNode( 'posts/test.html') )
         
     def test_directory_find_wildcard_filename( self ):
         matches = self.root.find( '*.html' )
