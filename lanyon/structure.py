@@ -49,7 +49,7 @@ class DirectoryNode( SiteNode ):
             if lanyon.glob.match( relative_path, path_pattern ):
                 matches.append( child )
             
-            if child.__class__ == DirectoryNode:
+            if isinstance(child, DirectoryNode):
                 matches.extend( child.find( path_pattern, start_node ) or [] )
         
         return matches
