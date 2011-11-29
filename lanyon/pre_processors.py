@@ -55,10 +55,6 @@ class YAMLFrontMatterLoader( SitePreProcessor ):
                 
 class BlogPostProcessor( SitePreProcessor ):
     tag_slug_re = re.compile("[^a-z0-9-]", re.IGNORECASE )
-
-    def __init__( self, config, options ):
-        super( BlogPostProcessor, self ).__init__( config )
-        self.options = options
     
     def process( self, site ):
         # TODO: Deal with missing options['path']
@@ -115,14 +111,39 @@ class MarkdownOutputRenamer( SitePreProcessor ):
         for node in markdown_nodes:
             node.output_path = os.path.splitext( node.path )[ 0 ] + '.html'
 
-class StaticAssetAggregator( SitePreProcessor ):
 
-    class StaticAssetRollupNode( lanyon.structure.ContentNode ):
+class StaticAssetBundleGenerator( SitePreProcessor ):
+    class StaticAssetBundleNode( lanyon.structure.ContentNode ):
         def __init__(self, path, content):
-            super(StaticAssetRollupNode, self).__init__( path );
+            super(self.__class__, self).__init__( path )
+            self._content = content
 
         def get_content( self, content_path ):
-            pass
+            return self._content
     
     def process( self, site ):
-        pass
+        for bundle_name in self.options['bundles']:
+            bundle = self.options['bundles'][bundle_name]
+            print "#   Creating: /" + bundle['output_path']
+            
+            content = ""
+            for path in bundle['files']:
+                for node in site.content_root.find(path):
+                    print "##            - concatenating: /" + node.path
+                    content += node.get_content(self.config['content_path'])
+                    node.parent.remove_child(node)
+            
+            # TODO: Create target dir (and any missing ancestors) if it doesn't 
+            #       exist
+            target_dir_node = site.content_root.find_first(
+                os.path.dirname(bundle['output_path'])
+            )
+
+            # Add bundle node to target dir
+            target_dir_node.add_child(
+                # TODO: is there a better way to refer to the inner class?
+                self.__class__.StaticAssetBundleNode(bundle['output_path'], content)
+            )
+
+
+
