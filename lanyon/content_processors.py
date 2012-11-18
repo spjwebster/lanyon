@@ -1,6 +1,7 @@
 import re, datetime
 import jinja2, yaml, markdown
 from subprocess import Popen, PIPE
+import tempfile, os, codecs, sys
 
 class ContentProcessor(object):
     def __init__( self, config, options = {} ):
@@ -84,12 +85,52 @@ class ExternalProcessor( ContentProcessor ):
         stdout.
     """
     def process( self, node, content ):
-        #TODO: Throw a more useful exception for command not found errors
-        proc = Popen([self.options['cmd']], shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        
-        (output, err) = proc.communicate(input=content)
+        output = None;
 
-        if err:
-            raise Exception( 'ExternalProcessor: ' + err)
+        if self.options.has_key('pipe') and self.options['pipe'] == True:
+            #TODO: Throw a more useful exception for command not found errors
+            proc = Popen([self.options['cmd']], shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            
+            (output, err) = proc.communicate(input=content)
+            if err:
+                raise Exception( 'ExternalProcessor: ' + err)
+        else:
+            # Write content to temp input file
+            input_file = None
+            try:
+                input_file = tempfile.NamedTemporaryFile(mode='w')
+                input_file.write( content.encode('utf-8') )
+                input_file.close()
+            except IOError:
+                print >> sys.stderr, "## Error: Couldn't open " + input_filename + " for writing"
+
+            # Create temp output filename
+            output_filename = input_file.name + '_output'
+
+            # Call command, replacing {input} with filename and {output} with output
+            command = self.options['cmd']
+            command = command.replace('{input}', input_file.name)
+            command = command.replace('{output}', output_filename)
+
+            status = os.system(command)
+
+            # Read content from output file
+            try:
+                with codecs.open( output_filename, 'r', 'utf-8' ) as f:
+                    content = f.read()
+                    f.close()
+            except IOError:
+                print >> sys.stderr, "## Error: Couldn't open " + output_filename + " for reading"
+
+            # Delete temp input and output files
+            try:
+                os.remove(input_file.name)
+            except:
+                pass
+
+            try:
+                os.remove(output_filename)
+            except:
+                pass
 
         return output
