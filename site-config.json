@@ -35,9 +35,17 @@
             "class": "lanyon.content_processors.ExternalProcessor",
             "extensions": [ "js" ],
             "options": {
+                "pipe": true,
                 "cmd": "java -jar yuicompressor-2.4.7.jar --type=js"
             }
-        }        
+        },
+        {
+            "class": "lanyon.content_processors.ExternalProcessor",
+            "extensions": ["png"],
+            "options": {
+                "cmd": "optipng {input} {output}"
+            }
+        }
     ],
 
 
