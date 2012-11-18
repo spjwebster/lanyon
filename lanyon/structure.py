@@ -61,8 +61,10 @@ class DirectoryNode( SiteNode ):
 
     def find_first( self, path_pattern ):
         matches = self.find( path_pattern )
-        matches.reverse()
-        return matches.pop()
+        if matches:
+            matches.reverse()
+            return matches.pop()
+        return None
         
     def visit( self, visitor ):
         super( DirectoryNode, self ).visit( visitor )
