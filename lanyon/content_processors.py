@@ -2,6 +2,7 @@ import re, datetime
 import jinja2, yaml, markdown
 from subprocess import Popen, PIPE
 import tempfile, os, codecs, sys
+import lanyon.utils
 
 class ContentProcessor(object):
     def __init__( self, config, options = {} ):
@@ -36,6 +37,7 @@ class Jinja2Renderer( ContentProcessor ):
         self.env = jinja2.Environment(
             loader = jinja2.FileSystemLoader( [ self.config['layout_path'] ] ),
         )
+        self.env.filters['slugify'] = lanyon.utils.slugify
         
     def process( self, node, content ):
         template = self.env.from_string( content )
