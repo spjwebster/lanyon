@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, codecs, json, cherrypy
+import os, sys, codecs, json, cherrypy, shutil
 from optparse import OptionParser
 from lanyon import Site
 
@@ -13,9 +13,30 @@ def main( argv ):
     
     elif command == "serve":
         _start_server( argv[1:] )
+
+    elif command == "clean":
+        _clean( argv[1:] )
     
     else:
-        print 'Usage: lanyon (generate|serve) [options]';
+        print 'Usage: lanyon (generate|serve|clean) [options]';
+
+def _clean( args ):
+    parser = OptionParser( 'usage: %prog clean' )
+    parser.add_option(
+        '-c', '--config', 
+        dest="config_path",
+        default="site-config.json",
+        help="The path to the configuration file to use for site genration"
+    )
+
+    (options, args) = parser.parse_args( args )
+
+    print options.config_path
+
+    config = _read_config( options.config_path )
+
+    shutil.rmtree( os.path.abspath(config['output_path']) )
+
 
 def _start_server( args ):
     parser = OptionParser( 'usage: %prog serve [options]' )
